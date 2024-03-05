@@ -5,9 +5,10 @@ import rioxarray
 import matplotlib.pyplot as plt
 import cartopy.crs
 import cartopy.io.img_tiles
+import cartopy.feature
 import pyproj
 
-# conda isntall -c conda-forge xarray rioxaaray dask matplotlib cartopy notebook
+# conda install -c conda-forge xarray rioxaaray dask matplotlib cartopy notebook
 
 class clonemap:
     def __init__(self, epsg, path = None, nrow = None, ncol = None, cellsize = None, west = None, north = None):
@@ -107,7 +108,7 @@ class clonemap:
     def fill_dem(self, outflowdepth = 1e31, corevolume = 1e31, corearea = 1e31, catchmentprecipitation = 1e31, lddin = False, replace = True):
         """
         Calculate pcrasters of depression-filled DEM: a wrapper for pcraster.lddcreatedem
-        See https://pcraster.geo.uu.nl/pcraster/4.4.0/documentation/pcraster_manual/sphinx/op_lddcreatedem.html#index-0 for pcraster.lddcreatedem function arguments
+        See https://pcraster.geo.uu.nl/pcraster/4.4.1/documentation/pcraster_manual/sphinx/op_lddcreatedem.html for pcraster.lddcreatedem function arguments
 
         return pcraster.Field
         """
@@ -120,7 +121,7 @@ class clonemap:
     def calculate_slope(self):
         """
         Calculate a pcraster of slope: a wrapper for pcraster.slope
-        See https://pcraster.geo.uu.nl/pcraster/4.4.0/documentation/pcraster_manual/sphinx/op_slope.html#index-0 for pcraster.slope function arguments
+        See https://pcraster.geo.uu.nl/pcraster/4.4.1/documentation/pcraster_manual/sphinx/op_slope.html for pcraster.slope function arguments
 
         return pcraster.Field
         """
@@ -131,7 +132,7 @@ class clonemap:
     def calculate_flowdir(self, outflowdepth = 1e31, corevolume = 1e31, corearea = 1e31, catchmentprecipitation = 1e31, lddin = False):
         """
         Calculate pcrasters of flow direction: a wrapper for pcraster.lddcreate
-        See https://pcraster.geo.uu.nl/pcraster/4.4.0/documentation/pcraster_manual/sphinx/op_lddcreate.html#index-0 for pcraster.lddcreate function arguments
+        See https://pcraster.geo.uu.nl/pcraster/4.4.1/documentation/pcraster_manual/sphinx/op_lddcreate.html for pcraster.lddcreate function arguments
         
         return pcraster.Field
         """
@@ -164,7 +165,7 @@ class clonemap:
     def create_catchment(self):
         """
         Create a pcraster of catchment: a wrapper for pcraster.catchment
-        See https://pcraster.geo.uu.nl/pcraster/4.4.0/documentation/pcraster_manual/sphinx/op_catchment.html#index-0
+        See https://pcraster.geo.uu.nl/pcraster/4.4.1/documentation/pcraster_manual/sphinx/op_catchment.html
 
         return pcraster.Field
         """
@@ -172,10 +173,21 @@ class clonemap:
         self.catchment = pcr.catchment(self.flowdir, self.outlet)
         return self.catchment
     
+    def create_subcatchment(self):
+        """
+        Create a pcraster of catchment: a wrapper for pcraster.subcatchment
+        See https://pcraster.geo.uu.nl/pcraster/4.4.1/documentation/pcraster_manual/sphinx/op_subcatchment.html
+
+        return pcraster.Field
+        """
+        if self.flowdir is None or self.outlet is None: return None
+        self.catchment = pcr.subcatchment(self.flowdir, self.outlet)
+        return self.catchment
+    
     def create_streamorder(self):
         """
         Create a pcraster of streamorder: a wrapper for pcraster.streamorder
-        See https://pcraster.geo.uu.nl/pcraster/4.4.0/documentation/pcraster_manual/sphinx/op_streamorder.html#index-0
+        See https://pcraster.geo.uu.nl/pcraster/4.4.1/documentation/pcraster_manual/sphinx/op_streamorder.html
 
         return pcraster.Field
         """
@@ -186,7 +198,7 @@ class clonemap:
     def create_accuflux(self, material = 1):
         """
         Create a pcraster of accumulated flux: a wrapper for pcraster.accuflux
-        See https://pcraster.geo.uu.nl/pcraster/4.4.0/documentation/pcraster_manual/sphinx/op_accuflux.html#accuflux for pcraster.lddcreatedem function arguments
+        See https://pcraster.geo.uu.nl/pcraster/4.4.1/documentation/pcraster_manual/sphinx/op_accuflux.html for pcraster.lddcreatedem function arguments
 
         return pcraster.Field
         """
@@ -398,7 +410,7 @@ class clonemap:
             print(f'write_raster: written to {path}.')
         return
     
-    def plot_cartopy(self, field, idx_plot = None, figsize = None, basemap = cartopy.io.img_tiles.OSM(), basemap_level = 10, extent = None, vmin = None, vmax = None, cmap = 'turbo', alpha = 0.7, title = None, clabel = None, savefig = None):
+    def plot_cartopy(self, field, idx_plot = None, shapes = [], figsize = None, basemap = cartopy.io.img_tiles.OSM(), basemap_level = 10, extent = None, vmin = None, vmax = None, cmap = 'turbo', alpha = 0.7, title = None, clabel = None, savefig = None):
         """
         Plot a pcraster field(s), using matplotlib and cartopy
             - Option 1. clone.map (field: None)
@@ -419,6 +431,8 @@ class clonemap:
         fgl.top_labels, fgl.right_labels = False, False,
         fgl.xlabel_style, fgl.ylabel_style = {'color': 'gray', 'size': 8}, {'color': 'gray', 'size': 8}
         fda = da.plot(ax = ax, transform = cartopy.crs.epsg(self.epsg), vmin = vmin, vmax = vmax, cmap = cmap, alpha = alpha)
+        if shapes is not None:
+            for s in shapes: ax.add_feature(s)
         if title is not None: ax.set_title(title)
         fig.tight_layout()
         if savefig is not None: plt.savefig(savefig, bbox_inches = 'tight')
